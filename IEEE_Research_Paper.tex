@@ -1,25 +1,30 @@
-\documentclass[conference]{IEEEtran}
+﻿\documentclass[conference]{IEEEtran}
 \IEEEoverridecommandlockouts
-% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
-
 \usepackage{cite}
 \usepackage{amsmath,amssymb,amsfonts}
-\usepackage{algorithmic}
 \usepackage{graphicx}
 \usepackage{textcomp}
 \usepackage{xcolor}
 \usepackage{hyperref}
-\usepackage{multirow}
-\usepackage{booktabs}
-\usepackage{array}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric}
+\usepackage{fancyhdr}
+\usepackage{placeins}
 
-\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
-    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+% Keep reference entries but hide numeric labels in bibliography.
+\makeatletter
+\renewcommand\@biblabel[1]{}
+\makeatother
+
+% Keep standard page style.
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
 
 \begin{document}
 
-\title{Deep Learning-Based Land Use and Land Cover Classification Using Sentinel-2 Multispectral Satellite Imagery: A Transfer Learning Methodology\\
-}
+\title{Deep Learning-Based Land Use and Land Cover Classification Using Sentinel-2 Multispectral Satellite Imagery: A Transfer Learning Methodology}
 
 \author{
 \IEEEauthorblockN{Aditya Sharma}
@@ -39,391 +44,271 @@ Mohali, Punjab, India \\
 \textit{Chandigarh University}\\
 Mohali, Punjab, India \\
 24bai70395@cuchd.in}
+\and
+\IEEEauthorblockN{Mukesh Kumar Verma}
+\IEEEauthorblockA{\textit{AIT-CSE Department} \\
+\textit{Chandigarh University}\\
+Mohali, Punjab, India \\
+mukesk.e18211@cumail.in}
+}
+
+\IEEEtitleabstractindextext{
+\begin{abstract}
+The classification of land use and land cover has become one of the foundation requirements of climate science, agricultural intelligence, sustainable urban planning, and disaster management. Since the continual output of the public satellite programs still creates the high-frequency multi-spectral images, the main concern is no longer the access to the data but the development of the credible, scalable, and explainable models to be able to convert raw images into practical geographic information. This paper gives a deep-learning-based framework to classify the patches of Sentinel-2 satellite images into ten types of land covers through transfer learning and close model adaptation. On the EuroSAT data, we train and test a Wide ResNet-50 based architecture and report the entire pipeline of data preparation through error interpretation.
+
+Besides giving the final performance, the work gives the practical justification as to why the transfer learning would be applicable in remote sensing environments where the availability of the labeled data may be minimal, the conditions of its acquisition are dynamic and the demand of deployment is high. The last model is the most successful in classification accuracy and displays stable performance in classes with separate spectral profiles, and it also shows predictable confusion between any vegetation-dominated classes that have similar spectral and textural profiles. This extended paper not only expands a model output, but also a replicable methodology template which can also be reused to adapt to the specific region to be monitored, as well as time and operational geospatial services.
+
+\end{abstract}
+\vspace{0.5em}
+\noindent\textbf{Keywords:} land use and land cover, Sentinel-2, transfer learning, deep learning, EuroSAT
 }
 
 \maketitle
+\IEEEdisplaynontitleabstractindextext
 
-\begin{abstract}
-The classification of land use and land cover (LULC) from satellite imagery represents a fundamental challenge in environmental monitoring and geospatial analysis. This research introduces a deep learning framework leveraging transfer learning techniques applied to Sentinel-2 multispectral imagery for automated LULC classification. We implement a Wide Residual Network (Wide ResNet-50) architecture, initialized with ImageNet pre-trained weights and fine-tuned on the EuroSAT benchmark dataset comprising 27,000 geo-referenced satellite patches across 10 distinct land cover categories. Our methodology achieves 93.4\% classification accuracy on the test dataset, demonstrating substantial improvements over conventional machine learning approaches. The model exhibits particularly strong performance on spectrally distinct classes such as water bodies and forested regions, achieving precision exceeding 96\%. We conduct comprehensive ablation studies examining the contribution of individual spectral bands and evaluate computational efficiency metrics. The proposed system demonstrates practical viability for operational deployment in environmental monitoring, urban planning, and agricultural management applications. Our implementation provides a scalable solution for large-scale geospatial analysis with inference latency under 50 milliseconds per image.
-\end{abstract}
+\section*{II. INTRODUCTION}
 
-\begin{IEEEkeywords}
-Convolutional neural networks, deep learning, land cover classification, remote sensing, Sentinel-2, transfer learning, Wide ResNet
-\end{IEEEkeywords}
+The field of earth observation has approached a data-rich stage and Sentinel-2 is one of the most significant sources of such revolution. Its multi-spectral sensing, open access policy and regular revisit schedule enables researchers and practitioners to track the variability in natural and built environments with more regularity than most of the past programs. Nonetheless, large flows of data impose a bottleneck on methodology since interpretation cannot be done manually to meet the needs of continental or global monitoring. Automated classification is thus needed to transform image collections to maps, statistics and indicators of decision to be used in governance and scientific analysis.
 
-\section{Introduction}
-The European Space Agency's Sentinel-2 satellite constellation provides unprecedented opportunities for systematic Earth observation through its multi-spectral imaging capabilities spanning 13 spectral bands. With a temporal resolution of five days and spatial resolution reaching 10 meters per pixel, these satellites generate substantial volumes of imagery suitable for diverse environmental monitoring applications \cite{drusch2012sentinel}.
+Remote sensing community has traditionally been using threshold-based approaches, spectral indices and classical machine-based classifiers that frequently need task-based feature engineering. Although these techniques are applicable and interpretable, they may not fare well in situations where classes exhibit similar reflectance properties or where visual information is very important in discrimination. Deep learning changes this paradigm where the hierarchical features are directly learned using the image data. At the same time, convolutional neural networks are able to learn local textures, mid-level spatial composition and high-level semantic structures, thereby being well suited to land cover mapping tasks in which context, pattern and spectral cues have a multiplicative effect.
 
-\subsection{Research Motivation}
-Traditional methodologies for terrestrial surface classification rely predominantly on manual interpretation or conventional machine learning algorithms requiring extensive feature engineering. These approaches face significant scalability challenges when processing the exponentially growing volumes of satellite data. Recent advances in deep learning, particularly convolutional neural networks (CNNs), have demonstrated remarkable capabilities in automated image analysis tasks \cite{lecun2015deep}.
+In spite of this promise, deep networks trained using a fully-supervised process can be computationally intensive and data-intensive in remote sensing. The solution that is provided by transfer learning is a convenient trade-off where the existing visual representations can be reused and adjusted to domain-specific classes. This article uses transfer learning to patch classification of Sentinel-2 with a designed purpose, that is, to maintain a high level of accuracy without complexifying the workflow, so that it can be replicated on local computing resources and can be scalable to new research problems. The behavioral analysis extended in this paper goes further to discuss training behavior, patterns of errors in classes, applicability of the training in real world and strategic directions to enhance generalization.
 
-\subsection{Problem Formulation}
-Given a satellite image patch $I \in \mathbb{R}^{H \times W \times C}$ where $H$ and $W$ represent spatial dimensions and $C$ denotes spectral channels, our objective is to learn a mapping function $f: \mathbb{R}^{H \times W \times C} \rightarrow \{1, 2, ..., K\}$ that assigns each input patch to one of $K$ land cover categories. The challenge lies in developing a robust classifier capable of handling:
-\begin{itemize}
-\item Spectral variability due to atmospheric conditions
-\item Seasonal appearance variations
-\item Geometric distortions and registration errors
-\item Limited labeled training samples relative to feature space dimensionality
-\end{itemize}
+\section*{III. Problem Context and Research Objectives}
 
-\subsection{Contributions}
-This work makes the following novel contributions:
-\begin{enumerate}
-\item Development of a transfer learning pipeline adapting ImageNet pre-trained models to multispectral satellite imagery
-\item Comprehensive evaluation demonstrating 93.4\% classification accuracy on the EuroSAT benchmark
-\item Systematic analysis of spectral band contributions to classification performance
-\item Implementation of an end-to-end inference system suitable for operational deployment
-\item Quantitative assessment of computational efficiency enabling real-time applications
-\end{enumerate}
+Sentinel-2 images of land cover classes have a heterogeneous appearance mostly as they vary with season, illumination, atmospheric conditions, moisture, and landscape composition of a region. Spectral and textual variation can also be high even in an individual semantic class. On the other hand, various classes can seemingly be very similar in certain conditions of acquisition making a boundary less clear. An effective model on such a setting should be able to represent both discriminative finesse and strong invariance.
 
-\section{Related Work}
+The problem stated in this research is supervised multi-class image classification. A set of ten labels are allocated to each patch of satellite, and they include annual crop, forest, herbaceous vegetation, highway, industrial, pasture, permanent crop, residential, river and sea or lake. This will be achieved by maximizing the quality of classification with the goal of ensuring that the model is trainable and that the model is also evaluateable in a reproducible workflow that will be used in the iterative development. In addition to aggregate accuracy, this paper focuses on the class-wise reliability, confusion structure and deployment relevance.
 
-\subsection{Remote Sensing for LULC Analysis}
-Early research in land cover classification employed spectral indices such as the Normalized Difference Vegetation Index (NDVI) combined with threshold-based classification schemes \cite{tucker1979red}. These methods, while interpretable, lack the flexibility to model complex spatial patterns and require manual parameter tuning for different geographic regions.
+The technical goal of this extended paper is to provide a concrete account of the methodology, experimental interpretation, and application-level implications in a coherent research narrative.
 
-\subsection{Machine Learning Approaches}
-Support Vector Machines (SVMs) and Random Forest classifiers have been extensively applied to satellite image classification \cite{mountrakis2011support}. These algorithms typically operate on hand-crafted features including texture descriptors, spectral indices, and morphological attributes. While effective for certain applications, their performance remains constrained by the quality of feature engineering.
+\begin{figure}[!t]
+\centering
+\includegraphics[width=0.95\columnwidth]{data/reference_images/change_1.png}
+\caption{Sample EuroSAT dataset patch visualization for qualitative reference.}
+\label{fig:sample_dataset_patch}
+\end{figure}
 
-\subsection{Deep Learning in Remote Sensing}
-Convolutional neural networks have revolutionized computer vision through their capacity to automatically learn hierarchical feature representations from raw pixel data. ResNet architectures employing residual connections enable training of very deep networks, achieving state-of-the-art performance across diverse image classification benchmarks \cite{he2016deep}. Recent studies have successfully adapted these architectures to remote sensing applications, demonstrating superior performance compared to traditional methods \cite{zhang2018deep}.
+\section*{IV. Related Work and Research Foundation}
 
-\subsection{Transfer Learning Paradigm}
-Transfer learning exploits knowledge acquired from large-scale datasets (typically ImageNet containing 1.2 million labeled images) to improve performance on domain-specific tasks with limited training data \cite{pan2009survey}. This approach is particularly relevant for remote sensing where obtaining extensive labeled datasets presents significant logistical challenges.
+Various methodological periods have passed through the land cover mapping. Initial methods were spectral index engineering, such as vegetation and water-based indices like NDVI and such formulas. These are lightweight and transparent and tend to rely on thresholds that have been carefully tuned but can be very poor when the overlap between classes is high. Later machine learning models, such as support vector machines and random forests, became even more flexible and in most cases yielded good results when used in experiments of moderate size. They usually, however, are based on handcrafted sets of features and may not use spatial structure in image patches to the fullest.
 
-\section{Methodology}
+Deep learning brought about a significant change in that manual feature extraction was not relied upon. Convolutional structures were better on natural image benchmarks and ultimately transduced effectively to remote sensing tasks. Particularly residual networks made more deep models with skip connections to enhance gradient flow and representational capacity. With these architectures becoming a standard, when transfer learning became a widely used approach to adapting pretrained models to domain-specific tasks, the cost of training became significantly reduced.
 
-\subsection{Dataset Description}
-We utilize the EuroSAT dataset \cite{helber2019eurosat}, a benchmark corpus for land use classification comprising 27,000 labeled Sentinel-2 satellite patches. Each sample represents a $64 \times 64$ pixel region with 13 spectral bands covering visible, near-infrared (NIR), and shortwave-infrared (SWIR) wavelengths. The dataset encompasses 10 thematic classes: annual crop, forest, herbaceous vegetation, highway, industrial, pasture, permanent crop, residential, river, and sea/lake.
+EuroSAT data were useful in unifying the assessment of the land use classification using Sentinel-2. The equal distribution of classes and the naturalistic distribution of scenes make it a convenient point of reference when trying to compare it with other studies. It was revealed by the previous research that deep models have the potential to perform better than the baselines in EuroSAT, though the variation in performance is still based on the choice of architecture, preprocessing strategy, training schedule, and rigor of evaluation. The present work is based on this literature since it offers an implementation-oriented transfer learning workflow, and records the actual decisions that can influence reproducibility in local settings.
 
-The dataset exhibits several characteristics making it suitable for algorithm validation:
-\begin{itemize}
-\item Geographic diversity spanning 34 European countries
-\item Balanced class distribution (2,000-3,000 samples per class)
-\item Real-world challenges including partial cloud cover and atmospheric effects
-\item Geo-referencing enabling validation against ground truth data
-\end{itemize}
+\section*{V. Dataset and Preprocessing Pipeline}
 
-\subsection{Data Preprocessing Pipeline}
+The data of this research is the EuroSAT which has around 27,000 labeled image patches which are based on Sentinel-2 feed. The samples are 64 by 64 pixel patches each of ten land cover classes. The dataset represents the wide geographic context in Europe, and it has natural variation in appearance of a scene which is useful in stress-testing model robustness in suitably realistic conditions.
 
-\subsubsection{Spectral Band Selection}
-While Sentinel-2 provides 13 spectral bands, we primarily utilize RGB channels (bands 4-3-2) for consistency with ImageNet pre-trained models. For spectral band analysis, we replicate single-band data across all three input channels.
+One of the main preprocessing choices during the transfer learning processes is compatibility with pretrained backbones in terms of channel. Since ImageNet-pretrained models take three-channel input, we mostly use RGB channel combinations in accordance with Sentinel-2 band mappings that can be used in visible-spectrum representation. Single channels are replicated to three to test informative wavelength contribution when some spectral analysis experiments require the shape of the tensors. This design offers compatibility and flexibility of exploration.
 
-\subsubsection{Data Augmentation Strategy}
-To enhance model generalization and mitigate overfitting, we apply the following augmentations during training:
-\begin{itemize}
-\item Random horizontal and vertical flips with probability 0.5
-\item Random rotation in range $[-30°, +30°]$
-\item Color jittering: brightness $\pm$20\%, contrast $\pm$20\%, saturation $\pm$20\%
-\item Random affine transformations with shear parameter $\pm 10°$
-\end{itemize}
+Training is done using all samples that are resized to match the network input resolution and converted to normalized tensors. Data division is done randomly to ensure that there is representative sampling between the training and validation groups. The base environment is focused on reproducibility and stability, which is particularly handy in cases of model head iteration, optimization parameter and evaluation code. When the baseline behavior has been legitimate, more formidable augmentation plans may be implemented to enhance invariance to direction, light and small geometric distortions.
 
-All images are normalized using ImageNet statistics: $\mu = [0.485, 0.456, 0.406]$ and $\sigma = [0.229, 0.224, 0.225]$.
+This preprocessing pipeline is deliberately lightweight as far as its operational aspect is concerned. It does not add redundant sophistication in initial experimenting, minimizes errors in implementation and enables an easy switching between the CPU and the GPU environment. This practical framing is relevant in the context of student and research laboratory settings, where the resources of computation differ and reproducible baselines are more useful than prematurely-optimized pipelines.
 
-\subsubsection{Dataset Partitioning}
-We employ a stratified split preserving class distributions:
-\begin{itemize}
-\item Training set: 70\% (18,900 samples)
-\item Validation set: 15\% (4,050 samples)
-\item Test set: 15\% (4,050 samples)
-\end{itemize}
+\section*{VI. Model Design and Transfer Learning Strategy}
 
-\subsection{Network Architecture}
+The classification body is Wide ResNet-50 which is initialized using ImageNet pretrained weights. The residual design enables the network to have a depth of representation and overcome the instability of optimization. Wide variants enhance the channel capacity and may represent a richer set of features, and this is advantageous in remote sensing scenes of mixed textures, geometry, and subtle spectral-visual variations.
 
-Our architecture builds upon Wide ResNet-50 \cite{zagoruyko2016wide}, a variant of the original ResNet featuring wider residual blocks that improve representation capacity while maintaining computational efficiency.
+Instead of the final classification layer, which is the original one, a task-specific head that is tailored to ten classes of EuroSat is applied. The head also has a compact but dense projection to an intermediate representation, a nonlinear activation unit, dropout regularization and a final class projection whose output can be a probability distribution. The backbone can provide additional visual priors as generalized by this adaptation and also has the final layers specializing to land cover semantics.
 
-\subsubsection{Base Network}
-Wide ResNet-50 consists of:
-\begin{itemize}
-\item Initial convolutional layer: $7 \times 7$ kernels, stride 2
-\item Four residual stages with $[3, 4, 6, 3]$ blocks respectively
-\item Widening factor increasing channel dimensions
-\item Global average pooling reducing spatial dimensions
-\end{itemize}
+The training is done in phases so as to stabilize the adaptation. Backbone layers are frozen during early epochs and it is only the new classification head that is improved. This step quickly matching high-level decision boundaries does not disrupt low-level obtained representations. At another fine-tuning stage, selective unfreezing or complete unfreezing, further adaptation can take place at a low learning rate. This biphase approach is especially efficient in cases where the size of the datasets is medium, and the convergence is needed as quickly as possible.
 
-The network employs residual connections defined as:
-\begin{equation}
-\mathbf{y} = \mathcal{F}(\mathbf{x}, \{W_i\}) + \mathbf{x}
-\end{equation}
-where $\mathcal{F}$ represents the residual mapping and $\mathbf{x}$ the identity shortcut.
+The optimization parameter involves Adam based on conservative regularization and learning rate scheduling to control the rate of convergence and the risk of overfitting. Optimized variables used are in batch sizing and epoch numbers in favor of throughput and stability in local-machine experiments. To ensure that the validation state is maintained and is not degraded in subsequent epochs, model checkpointing is implemented. It is a workflow built on a checkpoint-based comparison, as well as easy deployment, to facilitate inference.
 
-\subsubsection{Custom Classification Head}
-We replace the original fully connected layer with a specialized head:
-\begin{equation}
-\begin{aligned}
-\mathbf{h}_1 &= \text{ReLU}(W_1 \mathbf{z} + b_1) \\
-\mathbf{h}_2 &= \text{Dropout}(\mathbf{h}_1, p=0.5) \\
-\mathbf{y} &= \text{LogSoftmax}(W_2 \mathbf{h}_2 + b_2)
-\end{aligned}
-\end{equation}
-where $\mathbf{z} \in \mathbb{R}^{2048}$ is the feature vector from the base network, $W_1 \in \mathbb{R}^{256 \times 2048}$, and $W_2 \in \mathbb{R}^{10 \times 256}$.
+\begin{figure*}[!t]
+\centering
+\begin{tikzpicture}[
+	node distance=5mm and 6mm,
+	block/.style={
+		rectangle,
+		rounded corners=2pt,
+		draw=black,
+		line width=0.5pt,
+		minimum width=0.18\textwidth,
+		minimum height=11mm,
+		align=center,
+		fill=gray!8,
+		font=\footnotesize
+	},
+	link/.style={-{Latex[length=2.2mm,width=1.6mm]}, line width=0.6pt}
+]
+\node[block] (a) {Sentinel-2 Data\\Acquisition};
+\node[block, right=of a] (b) {Preprocessing\\and Split};
+\node[block, right=of b] (c) {Transfer Learning\\(Wide ResNet-50)};
+\node[block, right=of c] (d) {Training and\\Validation};
+\node[block, right=of d] (e) {Evaluation and\\Deployment};
 
-\subsection{Training Procedure}
+\draw[link] (a.east) -- (b.west);
+\draw[link] (b.east) -- (c.west);
+\draw[link] (c.east) -- (d.west);
+\draw[link] (d.east) -- (e.west);
+\end{tikzpicture}
+\caption{End-to-end workflow for Sentinel-2 land use and land cover classification using transfer learning.}
+\label{fig:workflow_tex}
+\end{figure*}
 
-\subsubsection{Loss Function}
-We employ negative log-likelihood loss combined with LogSoftmax:
-\begin{equation}
-\mathcal{L} = -\frac{1}{N}\sum_{i=1}^{N} \log(p_{y_i}(\mathbf{x}_i))
-\end{equation}
-where $p_{y_i}$ denotes the predicted probability for the true class $y_i$.
+\section*{VII. Results and Discussion}
 
-\subsubsection{Optimization Strategy}
-We utilize Adam optimizer \cite{kingma2014adam} with parameters:
-\begin{itemize}
-\item Initial learning rate: $\eta = 10^{-3}$
-\item Exponential decay rates: $\beta_1 = 0.9$, $\beta_2 = 0.999$
-\item L2 regularization: $\lambda = 10^{-5}$
-\item Batch size: 32
-\end{itemize}
+Behavioral training shows the desired direction of the transfer learning systems. The reduction of losses is very fast and the accuracy of validation is sharp in early epochs when the classifier head is learning how to map the features which are already trained to the classes of the domain. At the point of fine-tuning, the gains become increasingly more gradual, and they still lead to the improvement of the quality of the class discrimination. This behavior is indicative of the fact that pretrained representations are good initializations and that the optimization load is less as compared to when there is random initialization.
 
-\subsubsection{Two-Phase Training}
-\textbf{Phase 1 - Frozen Feature Extraction (Epochs 1-5):} We freeze all convolutional layers and train only the classification head. This enables rapid adaptation of the output layer to the new task while preserving learned ImageNet features.
+In the recorded runs, the model also has the overall accuracy of about 93.4 percent and the values of precision, recall, and F1-score are also very high in most classes. This finding on the transfer learning establishes that the transfer learning would be able to provide powerful performance in the context of Sentinel-2 patch classification when using real-life training fees. Just as important, analysis of classes shows the points where further improvement efforts may be increased. The performance of forest and river type largely works well as they have relatively unique texture and spectral appearance as compared to annual crop, permanent crop, and herbaceous vegetation with similar visual attributes and seasonal changes.
 
-\textbf{Phase 2 - Fine-tuning (Epochs 6-10):} We unfreeze all layers and continue training with reduced learning rate $\eta = 10^{-4}$. This allows subtle adjustments to feature extractors while avoiding catastrophic forgetting.
+These observations are supported with the help of confusion matrix inspection. Most classes have reliable discrimination as indicated by dominant diagonal but other categories with off-dominant concentrations are closely associated with other semantically related categories and are difficult to separate. Instead of considering such confusions as mere mistakes, they may be taken as teaching on future model design. Such boundary cases can be expected to be enhanced through additional temporal context, multi-band fusion and feature constraints provided by domain knowledge than detached hyperparameter settings.
 
-\subsection{Evaluation Metrics}
-We assess performance using:
+\begin{figure}[!t]
+\centering
+\includegraphics[width=0.95\columnwidth]{data/reference_images/confusion_matrix.png}
+\caption{Confusion matrix of the trained model after learning on approximately 27,000 Sentinel-2 image patches.}
+\label{fig:confusion_matrix_27000}
+\end{figure}
 
-\textbf{Overall Accuracy:}
-\begin{equation}
-\text{OA} = \frac{\sum_{i=1}^{K} n_{ii}}{\sum_{i=1}^{K}\sum_{j=1}^{K} n_{ij}}
-\end{equation}
+An analysis of transfer learning analysis also shows efficiency gains through comparative analysis. Using pretrained initialization, the model can usefully converge rapidly and converges in 1/fractions of the duration of from-scratch training. This is an essential efficiency gain in cases where repeated experiments are needed to run under parameter settings, variants of preprocessing, or subsets based on areas.
 
-\textbf{Per-class Precision and Recall:}
-\begin{equation}
-P_c = \frac{TP_c}{TP_c + FP_c}, \quad R_c = \frac{TP_c}{TP_c + FN_c}
-\end{equation}
+\section*{VIII. Spectral Interpretation}
 
-\textbf{F1-Score:}
-\begin{equation}
-F1_c = 2 \cdot \frac{P_c \cdot R_c}{P_c + R_c}
-\end{equation}
+Sentinel-2 richly offers spectral data of visible, near-infrared and shortwave-infrared. By extension, the wider spectral use ought to enhance class separability particularly to vegetation and moisture sensitive classes. In real practice, benefits are determined on integration architecture and architecture compatible feature integration approach. Normal ImageNet-trained backbones designed to be used with three-channel natural imagery, direct use of all the thirteen channels would require an architectural change or feature fusion design.
 
-\section{Experimental Results}
+In the existing paradigm, even RGB-based transfer learning is already capable of providing good baseline performance. This implies that spatial composition and visible-spectrum inputs present a lot of discriminative information in a large number of EuroSAT categories. However, when they are carried out in the context of bands, it is likely that the value of near-infrared and shortwave information may be added in some situations, especially when it comes to vegetation health, or water-land boundaries. The value difference between naive all-band concatenation suggests that the benefits which rich data available allow cannot be fulled without spectral structure design consistent with model architecture.
 
-\subsection{Implementation Details}
-Our implementation utilizes PyTorch 1.9 framework on NVIDIA GTX 1080 GPU (8GB VRAM). Training converges in approximately 7.5 minutes for 10 epochs with batch size 32.
+This observation has some practical implication on the applied work. RBG transfer learning may also serve as a powerful initial option when speed of deployment and repeatability are the key factors. Custom multi-branch or spectral-attention networks might be warranted when the best way to solve the problem is to be able to distinguish spectrally similar classes with maximum fully separability. This then implies that the choice of architecture ought to be informed by operating constraints, class difficulty profile and the acceptable cost of computing.
 
-\subsection{Overall Performance}
-Table \ref{tab:overall_results} presents aggregate performance metrics on the test set.
+\section*{IX. System Implementation and Deployment}
 
-\begin{table}[htbp]
-\caption{Overall Performance Metrics}
-\begin{center}
-\begin{tabular}{lc}
-\toprule
-\textbf{Metric} & \textbf{Value (\%)} \\
-\midrule
-Overall Accuracy & 93.4 \\
-Average Precision & 93.1 \\
-Average Recall & 93.4 \\
-Average F1-Score & 93.2 \\
-\bottomrule
+The complete project is arranged into a sequence of modular components, that is, data access, model definition, training logic, configuration management, inference utilities, and web facing service layer. Such building construction will allow easy experimentation and reduce time spent on repair. The data module is concerned with construction and loading changes of the data sets. The architecture and fine-tuning controls of the transfer learning are contained in the model module. Coordination of optimization, validation and checkpoint is coordinated by the training module. The inference module supports image-level prediction and confidence estimation and the model functions are available on a lightweight service interface in the application layer.
+
+This structure will make this less coupled because an engineer is able to work on experimentation and deployment matters independently. The long-lasting scientists can improve model internals without rewriting service ends and without modifying training code application developers can add much stronger checkpoints. This kind of separation is noteworthy in cases of academic to practical transitions, in which research prototypes are often expected to be demonstrators or operational tools.
+
+When the properties of the run network show that the method is pragmatic to near real-time patch-scale inference with a factor of magnitude less latency than otherwise would be expected to have been observed with full-scene semantic pipelines. tile-based batched processing can also facilitate their frequent updates to ensure that the compute demands remain at manageable levels in order to trace the workflows. The latter can be applied in the process of such activities as routine monitoring of the urban development, change of the area under agriculture, and prompt analysis following an incident.
+
+\section*{X. Practical Applications and Real-World Implications}
+
+The suggested framework is directly related to the sphere of the environmental monitoring and policy support. The periodical classification products may be applied to forestry to determine any alteration in the canopy, prospective deforegation sites, and re-forestation. In the city planning, the shift in classes based on residential, industrial and transportation connected class can demonstrate the growth design and infrastructural pressures. Combined with the temporal information, the class-level estimates can be applied in the agricultural systems to assist in crop area estimation, seasonality analysis and early warning systems.
+
+The disaster management is the other important area of application. Right after floods, fires or landslides are going to take place, then speedy categorization might be conducted, and first-pass proxies of damages will be recognized, identifying water enlargement, vegetation decrease, and disturbance of built areas. It requires closer validation and uncertainty calibration to achieve high-confidence operational deployment engineering-level and the pipelining presented with highly valued baseline to fast situational awareness.
+
+On the policy level, automated land cover analytics can be used to facilitate climate and sustainability reporting because it provides similar indicators over time. These indicators may be used to assess the success of the land management, restoration program oversight as well as other programs that check the adherence of the environment under the large geographic perspective.
+
+\section*{XI. Constraints and Limitations}
+
+Although it has been performing, there are a number of weaknesses. To start with, a grid-size or pixel of 10 meters might not be fine-grained city or precision of fine object-discrimination, wherein border effects and mixed pixels are taken into consideration. Second, it is possible to discover temporal variability to alter how the classes look and reduce the model stability when the training data do not encompass all the seasonal variability. Third, the transfer of the domain outside the benchmark area may result in the distribution change concerning climate, the type of vegetation, or land management systems.
+
+The level of constraints also happens to be important since it is at the model level. Ready-trained RGB architectures are good, and they can fail to realise the full multispectral capabilities without spectral fusion mechanisms. The pressure between convenient transfer learning and domain-specific discrimination requirements is manifested by class ambiguity in categories based on vegetation. It is also true that quality of confusion matrices cannot be fully reliable per se; it needs an assessment as well as the calibration considering uncertainty to operate within the matters of high-stakes environment.
+
+There are further restrictions of the operational deployment which are of data volume, processing infrastructure and validation logistics. The extent of surveillance of large scale can generate huge tiles which require design of clouds and storage consciously. Continuous checking of ground truth is still costly and time sensitive, especially in situations where the land conditions vary on a short time scale that is between satellite revisions and field versions.
+
+\section*{XII. CONCLUSION}
+
+This extended paper proves the point that Sentinel-2 land cover classification has a solid, viable base using a transfer learning. The pipeline is based on adapting a pretrained Wide ResNet-50, where the task-specific classification head is attached and a staged training schedule enables the pipeline to achieve high overall performance with only a small amount of computation and it is also reproducible. The analysis proves that the behavior at the class level is typically high, and the residual errors are in semantically and spectrally similar vegetation types.
+
+The greater work contribution is in its implementation-based outlook. Instead of introducing end measurements, the paper explains the entire logic of the experiment used in the case to transition between benchmark experimentation and application-conscious deployment. This incorporates preprocessing options, optimization policy, checkpoint control, confusion based diagnostics, and constraints on the environments.
+
+This can form the backbone of scalable Earth monitoring with the further development of open satellite data and machine learning infrastructure. As the specific enhancements in the realm of temporal representation, multispectral synthesis, and uncertainty assessment are made, the transfer-learning-based systems have the potential to offer further and more effective support to environmental science, planning, and decision making aimed at resilience.
+
+\section*{XIII. FUTURE WORK}
+
+The direction of future research should be on time modelling and more vibrant spectral combination. The sequence-conscious architectures can as well apply revisit knowledge in isolating the classes that appear related at a particular time, however, in seasonal patterns. Multi-branch backbones Sentinel-2 channels Spectral-attention Backbones that are formed with the objective of Sentinel-2 channels might outperform the RGB transfer-learning constraints in vegetation/crop discrimination.
+
+The other notable modernization is uncertainty-conscious classification. Calibration Probabilistic calibration is able to generate confidence signals applicable to operational decision support by way of Bayesian approximations and ensemble diversity. By feeding these signals downstream, it would enable analysts to do manual review over low-confidence signals and automate high-confidence ones.
+
+Domain adaptation should also be made by cross-region robustness. The trends, which tend to be common in the models of the European, may require adjustment to the environment in the tropical, arid and mountain landscapes that have contrasting reflectance regimes and land-use structure. Such adaptation can be enabled by semi-supervised and active methods of learning so as to lessen annotation load on it. Finally, the implementation would be enhanced by using cloud-native pipelines that would automate ingestion, preprocessing, inference and reporting through reproducible versioning.
+
+\section*{XIV. Additional Visual Results and Comparative Table}
+
+The following figures and table are added as supplemental material to strengthen visual and comparative reporting without altering the original manuscript discussion.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=0.95\columnwidth]{data/reference_images/overview.png}
+\caption{Dataset overview and class distribution style visualization used for model context.}
+\label{fig:dataset_overview}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=0.95\columnwidth]{data/reference_images/Accuracy_without_scheduler.png}
+\caption{Validation accuracy trend across epochs (without scheduler) for additional training behavior evidence.}
+\label{fig:acc_no_sched}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=0.95\columnwidth]{data/reference_images/loss_without_scheduler.png}
+\caption{Training and validation loss trend (without scheduler) showing optimization stability pattern.}
+\label{fig:loss_no_sched}
+\end{figure}
+
+\begin{table}[!t]
+\caption{Qualitative Summary of Model Behavior and Practical Interpretation}
+\label{tab:qual_summary}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{|p{0.14\columnwidth}|p{0.27\columnwidth}|p{0.22\columnwidth}|p{0.23\columnwidth}|}
+\hline
+\textbf{Aspect} & \textbf{Observation in Current Study} & \textbf{Evidence Source in Paper} & \textbf{Practical Interpretation} \\
+\hline
+Overall performance & High classification quality (\textasciitilde93.4\% overall accuracy). & Training Dynamics and Quantitative Results section. & Transfer learning with Sentinel-2 is effective for baseline operational mapping. \\
+\hline
+Class-wise behavior & Strong diagonal pattern with confusion in similar vegetation classes. & Confusion matrix discussion and Fig.~\ref{fig:confusion_matrix_27000} narrative. & Vegetation-related classes benefit from richer spectral and temporal cues. \\
+\hline
+Convergence speed & Pretrained initialization converges faster than training from scratch. & Comparative analysis paragraph in quantitative section. & Useful for fast iteration in applied deployment pipelines. \\
+\hline
+Deployment readiness & Modular pipeline supports reproducible inference workflow. & System Implementation and Deployment section. & Suitable for scaling to routine monitoring pipelines. \\
+\hline
 \end{tabular}
-\label{tab:overall_results}
-\end{center}
 \end{table}
 
-\subsection{Per-Class Analysis}
-Table \ref{tab:class_results} details classification performance across all 10 land cover categories.
+\FloatBarrier
 
-\begin{table}[htbp]
-\caption{Per-Class Performance Metrics}
-\begin{center}
-\small
-\begin{tabular}{lccc}
-\toprule
-\textbf{Class} & \textbf{Prec.} & \textbf{Rec.} & \textbf{F1} \\
-\midrule
-AnnualCrop & 91.2 & 89.8 & 90.5 \\
-Forest & 96.5 & 97.1 & 96.8 \\
-HerbaceousVeg. & 91.8 & 90.2 & 91.0 \\
-Highway & 94.2 & 93.5 & 93.9 \\
-Industrial & 95.1 & 94.7 & 94.9 \\
-Pasture & 92.3 & 91.9 & 92.1 \\
-PermanentCrop & 90.7 & 91.4 & 91.0 \\
-Residential & 94.8 & 95.2 & 95.0 \\
-River & 97.3 & 96.8 & 97.1 \\
-SeaLake & 93.6 & 94.1 & 93.9 \\
-\bottomrule
-\end{tabular}
-\label{tab:class_results}
-\end{center}
-\end{table}
+\section*{XV. References}
+\begin{thebibliography}{99}
 
-\subsection{Confusion Matrix Analysis}
-The confusion matrix reveals that primary classification errors occur between spectrally similar categories. Annual crops and permanent crops exhibit mutual confusion (4.2\% misclassification rate), attributable to overlapping spectral signatures during certain phenological stages. Similarly, herbaceous vegetation occasionally misclassifies as pasture (3.8\% error rate).
+\bibitem{drusch2012sentinel2}
+M. Drusch, U. Del Bello, S. Carlier, O. Colin, V. Fernandez, F. Gascon, B. Hoersch, C. Isola, P. Laberinti, P. Martimort, A. Meygret, F. Spoto, O. Sy, F. Marchese, and P. Bargellini, "Sentinel-2: ESA's Optical High-Resolution Mission for GMES Operational Services," \emph{Remote Sensing of Environment}, vol. 120, pp. 25-36, May 2012.
 
-Water bodies (river and sea/lake classes) and forested regions demonstrate minimal confusion with other categories, achieving precision exceeding 96\%. This superior performance reflects their distinctive spectral characteristics in NIR and SWIR bands.
+\bibitem{helber2019eurosat}
+P. Helber, B. Bischke, A. Dengel, and D. Borth, "EuroSAT: A Novel Dataset and Deep Learning Benchmark for Land Use and Land Cover Classification," \emph{IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing}, vol. 12, no. 7, pp. 2217-2226, Jul. 2019.
 
-\subsection{Spectral Band Evaluation}
-Table \ref{tab:spectral_bands} presents classification accuracy across different spectral band configurations.
+\bibitem{he2016resnet}
+K. He, X. Zhang, S. Ren, and J. Sun, "Deep Residual Learning for Image Recognition," in \emph{Proc. IEEE Conf. Computer Vision and Pattern Recognition (CVPR)}, Las Vegas, NV, USA, 2016, pp. 770-778.
 
-\begin{table}[htbp]
-\caption{Spectral Band Configuration Analysis}
-\begin{center}
-\begin{tabular}{lc}
-\toprule
-\textbf{Band Configuration} & \textbf{Accuracy (\%)} \\
-\midrule
-Blue (Band 2) & 76.3 \\
-Green (Band 3) & 78.1 \\
-Red (Band 4) & 79.8 \\
-NIR (Band 8) & 82.5 \\
-SWIR1 (Band 11) & 81.2 \\
-SWIR2 (Band 12) & 79.6 \\
-\midrule
-RGB (4-3-2) & \textbf{93.4} \\
-CIR (8-4-3) & 91.7 \\
-SWIR (12-11-2) & 87.3 \\
-All 13 bands & 94.1 \\
-\bottomrule
-\end{tabular}
-\label{tab:spectral_bands}
-\end{center}
-\end{table}
+\bibitem{zagoruyko2016wide}
+S. Zagoruyko and N. Komodakis, "Wide Residual Networks," in \emph{Proc. British Machine Vision Conf. (BMVC)}, York, U.K., 2016, pp. 87.1-87.12.
 
-The NIR band individually achieves 82.5\% accuracy, significantly outperforming visible wavelengths. However, RGB combination leveraging pre-trained features yields 93.4\% accuracy. Incorporating all 13 bands provides marginal improvement (0.7\%), suggesting RGB channels capture sufficient discriminative information when combined with deep learned features.
+\bibitem{pan2010transfer}
+S. J. Pan and Q. Yang, "A Survey on Transfer Learning," \emph{IEEE Transactions on Knowledge and Data Engineering}, vol. 22, no. 10, pp. 1345-1359, Oct. 2010.
 
-\subsection{Training Dynamics}
-Training loss exhibits rapid decrease during the initial frozen-backbone phase (epochs 1-5), declining from 1.83 to 0.42. Validation accuracy increases from 82.3\% to 91.7\% during this phase. The fine-tuning phase (epochs 6-10) yields gradual improvements, with validation accuracy reaching 93.4\% at epoch 9. No significant overfitting occurs, with training and validation curves maintaining close correspondence throughout training.
+\bibitem{yosinski2014transferable}
+J. Yosinski, J. Clune, Y. Bengio, and H. Lipson, "How Transferable Are Features in Deep Neural Networks?," in \emph{Advances in Neural Information Processing Systems}, vol. 27, 2014, pp. 3320-3328.
 
-\subsection{Computational Efficiency}
-Our implementation demonstrates operational viability:
-\begin{itemize}
-\item Training time: 45 seconds per epoch
-\item Inference latency: 48 milliseconds per image
-\item Model size: 102 MB (compressed state dictionary)
-\item GPU memory: 3.8 GB during training
-\end{itemize}
+\bibitem{kingma2015adam}
+D. P. Kingma and J. Ba, "Adam: A Method for Stochastic Optimization," in \emph{Proc. Int. Conf. Learning Representations (ICLR)}, San Diego, CA, USA, 2015.
 
-Compared to training from random initialization (requiring 80+ epochs for convergence), transfer learning reduces training time by approximately 16-fold while improving final accuracy by 1.3 percentage points.
+\bibitem{cheng2017remote}
+G. Cheng, J. Han, and X. Lu, "Remote Sensing Image Scene Classification: Benchmark and State of the Art," \emph{Proceedings of the IEEE}, vol. 105, no. 10, pp. 1865-1883, Oct. 2017.
 
-\subsection{Transfer Learning Impact}
-Ablation study comparing pre-trained versus randomly initialized models reveals:
-\begin{itemize}
-\item Random initialization: 92.1\% accuracy after 100 epochs
-\item Transfer learning: 93.4\% accuracy after 10 epochs
-\item First epoch accuracy: 15.2\% (random) vs. 82.3\% (pre-trained)
-\end{itemize}
+\bibitem{zhu2017deeplearning}
+X. X. Zhu, D. Tuia, L. Mou, G.-S. Xia, L. Zhang, F. Xu, and F. Fraundorfer, "Deep Learning in Remote Sensing: A Comprehensive Review and List of Resources," \emph{IEEE Geoscience and Remote Sensing Magazine}, vol. 5, no. 4, pp. 8-36, Dec. 2017.
 
-These results confirm the substantial benefit of leveraging ImageNet pre-trained features for satellite image classification despite domain differences.
+\bibitem{eurosatrepo}
+P. Helber, "EuroSAT: Land Use and Land Cover Classification with Sentinel-2," GitHub repository. [Online]. Available: \url{https://github.com/phelber/EuroSAT}. Accessed: Apr. 1, 2026.
 
-\section{Discussion}
+\bibitem{lecun2015deep}
+Y. LeCun, Y. Bengio, and G. Hinton, "Deep Learning," \emph{Nature}, vol. 521, no. 7553, pp. 436-444, May 2015.
 
-\subsection{Analysis of Results}
-Our methodology achieves competitive performance on the EuroSAT benchmark, with overall accuracy of 93.4\% comparing favorably to published results in the literature. The two-phase training strategy effectively balances rapid adaptation (frozen backbone) with task-specific feature refinement (fine-tuning).
+\bibitem{schmitt2019sen12ms}
+M. Schmitt, L. H. Hughes, C. Qiu, and X. X. Zhu, "SEN12MS---A Curated Dataset of Georeferenced Multi-Spectral Sentinel-1/2 Imagery for Deep Learning and Data Fusion," \emph{ISPRS Annals of the Photogrammetry, Remote Sensing and Spatial Information Sciences}, vol. IV-2/W7, pp. 153-160, 2019.
 
-Classes exhibiting high spectral distinctiveness (forest, water bodies) achieve precision exceeding 96\%, while spectrally similar categories (crops, vegetation types) demonstrate lower but still acceptable performance around 90-92\%.
+\bibitem{congalton2019accuracy}
+R. G. Congalton and K. Green, \emph{Assessing the Accuracy of Remotely Sensed Data: Principles and Practices}, 3rd ed. Boca Raton, FL, USA: CRC Press, 2019.
 
-\subsection{Practical Applications}
+\bibitem{goodfellow2016dlbook}
+I. Goodfellow, Y. Bengio, and A. Courville, \emph{Deep Learning}. Cambridge, MA, USA: MIT Press, 2016.
 
-\subsubsection{Environmental Monitoring}
-The proposed system enables automated assessment of:
-\begin{itemize}
-\item Deforestation detection and forest cover dynamics
-\item Wetland ecosystem health monitoring
-\item Biodiversity habitat mapping
-\item Climate change impact assessment
-\end{itemize}
-
-\subsubsection{Agricultural Management}
-Applications include:
-\begin{itemize}
-\item Crop type identification for yield prediction
-\item Irrigation efficiency evaluation
-\item Land use compliance verification
-\item Agricultural subsidy validation
-\end{itemize}
-
-\subsubsection{Urban Planning}
-Urban applications encompass:
-\begin{itemize}
-\item Urban sprawl quantification
-\item Green space adequacy assessment
-\item Infrastructure development monitoring
-\item Zoning regulation enforcement
-\end{itemize}
-
-\subsection{Limitations and Challenges}
-Several limitations warrant consideration:
-
-\textbf{Spatial Resolution:} 10-meter pixel resolution limits detection of small-scale features. Urban applications requiring building-level detail necessitate higher resolution imagery.
-
-\textbf{Temporal Dynamics:} Single-timestamp classification cannot capture seasonal variations. Multi-temporal analysis would improve crop type discrimination.
-
-\textbf{Geographic Generalization:} Training exclusively on European landscapes may limit performance in tropical or arid regions. Domain adaptation techniques could address this limitation.
-
-\textbf{Atmospheric Effects:} Despite preprocessing, cloud shadows and haze contamination occasionally introduce classification errors. Robust atmospheric correction algorithms would improve consistency.
-
-\section{Future Research Directions}
-
-\subsection{Architectural Enhancements}
-Future work should investigate:
-\begin{itemize}
-\item Vision Transformer architectures for long-range spatial dependencies
-\item Multi-scale feature fusion for capturing hierarchical patterns
-\item Attention mechanisms highlighting discriminative spatial regions
-\item 3D convolutions exploiting multi-temporal image sequences
-\end{itemize}
-
-\subsection{Multi-Modal Integration}
-Combining Sentinel-2 optical imagery with complementary data sources:
-\begin{itemize}
-\item Synthetic Aperture Radar (SAR) for all-weather capability
-\item LiDAR elevation data for topographic context
-\item Hyperspectral imagery for enhanced spectral resolution
-\item Climate and meteorological data for temporal modeling
-\end{itemize}
-
-\subsection{Temporal Modeling}
-Incorporating temporal dimension through:
-\begin{itemize}
-\item Recurrent networks (LSTM/GRU) for phenology modeling
-\item Temporal attention mechanisms
-\item Change detection as explicit supervised task
-\item Seasonal pattern recognition
-\end{itemize}
-
-\subsection{Operational Deployment}
-Scaling to production systems requires:
-\begin{itemize}
-\item Cloud-based distributed processing infrastructure
-\item Real-time streaming inference pipelines
-\item Web-accessible APIs for researcher integration
-\item Mobile applications for field validation
-\end{itemize}
-
-\section{Conclusion}
-This research presents a comprehensive deep learning framework for automated land cover classification from Sentinel-2 satellite imagery. Our transfer learning approach, leveraging Wide ResNet-50 pre-trained on ImageNet, achieves 93.4\% classification accuracy on the EuroSAT benchmark dataset.
-
-Key findings include: (1) Transfer learning provides 16-fold training time reduction compared to training from scratch while improving accuracy; (2) RGB channels contain sufficient information for high-accuracy classification when combined with deep features; (3) Spectrally distinct classes (water, forest) achieve precision exceeding 96\%; (4) The system demonstrates operational viability with inference latency under 50 milliseconds.
-
-The methodology exhibits practical applicability for environmental monitoring, agricultural management, and urban planning. Future research should explore multi-temporal modeling, multi-modal data fusion, and deployment at global scale. As satellite constellation capabilities continue expanding and deep learning techniques advance, automated geospatial analysis will play increasingly critical roles in addressing environmental challenges and supporting sustainable development.
-
-\begin{thebibliography}{00}
-\bibitem{drusch2012sentinel} M. Drusch et al., ``Sentinel-2: ESA's optical high-resolution mission for GMES operational services,'' \textit{Remote Sensing of Environment}, vol. 120, pp. 25-36, 2012.
-
-\bibitem{lecun2015deep} Y. LeCun, Y. Bengio, and G. Hinton, ``Deep learning,'' \textit{Nature}, vol. 521, no. 7553, pp. 436-444, 2015.
-
-\bibitem{tucker1979red} C. J. Tucker, ``Red and photographic infrared linear combinations for monitoring vegetation,'' \textit{Remote Sensing of Environment}, vol. 8, no. 2, pp. 127-150, 1979.
-
-\bibitem{mountrakis2011support} G. Mountrakis, J. Im, and C. Ogole, ``Support vector machines in remote sensing: A review,'' \textit{ISPRS Journal of Photogrammetry and Remote Sensing}, vol. 66, no. 3, pp. 247-259, 2011.
-
-\bibitem{he2016deep} K. He, X. Zhang, S. Ren, and J. Sun, ``Deep residual learning for image recognition,'' in \textit{Proc. IEEE Conference on Computer Vision and Pattern Recognition (CVPR)}, 2016, pp. 770-778.
-
-\bibitem{zhang2018deep} L. Zhang, L. Zhang, and B. Du, ``Deep learning for remote sensing data: A technical tutorial on the state of the art,'' \textit{IEEE Geoscience and Remote Sensing Magazine}, vol. 4, no. 2, pp. 22-40, 2016.
-
-\bibitem{pan2009survey} S. J. Pan and Q. Yang, ``A survey on transfer learning,'' \textit{IEEE Transactions on Knowledge and Data Engineering}, vol. 22, no. 10, pp. 1345-1359, 2010.
-
-\bibitem{helber2019eurosat} P. Helber, B. Bischke, A. Dengel, and D. Borth, ``EuroSAT: A novel dataset and deep learning benchmark for land use and land cover classification,'' \textit{IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing}, vol. 12, no. 7, pp. 2217-2226, 2019.
-
-\bibitem{zagoruyko2016wide} S. Zagoruyko and N. Komodakis, ``Wide residual networks,'' in \textit{Proc. British Machine Vision Conference (BMVC)}, 2016.
-
-\bibitem{kingma2014adam} D. P. Kingma and J. Ba, ``Adam: A method for stochastic optimization,'' in \textit{Proc. International Conference on Learning Representations (ICLR)}, 2015.
-
-\bibitem{simonyan2014very} K. Simonyan and A. Zisserman, ``Very deep convolutional networks for large-scale image recognition,'' in \textit{Proc. International Conference on Learning Representations (ICLR)}, 2015.
-
-\bibitem{deng2009imagenet} J. Deng, W. Dong, R. Socher, L.-J. Li, K. Li, and L. Fei-Fei, ``ImageNet: A large-scale hierarchical image database,'' in \textit{Proc. IEEE Conference on Computer Vision and Pattern Recognition (CVPR)}, 2009, pp. 248-255.
 \end{thebibliography}
 
 \end{document}
+
